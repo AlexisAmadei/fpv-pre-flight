@@ -1,0 +1,3 @@
+# Custom transformIgnorePatterns for Jest under pnpm
+
+`@react-native/jest-preset`'s default `transformIgnorePatterns` assumes npm/yarn's flat `node_modules/<pkg>` layout. Under pnpm, real packages live at `node_modules/.pnpm/<pkg>@<version>/node_modules/<pkg>`, so the preset's regex matches the intermediate `node_modules/.pnpm/` segment as "ignore" before it ever reaches the `@react-native` exception, and RN's own untranspiled internals fail to parse. `jest.config.js` overrides `transformIgnorePatterns` to also allow `.pnpm` through as an intermediate segment. If the RN version bump changes the preset's own pattern, re-sync the allowed-package list here.
