@@ -6,9 +6,15 @@ export { isImperialRegion, kmhToMph, formatWindSpeed } from './units';
 export {
   getWeather,
   refreshWeather,
-  refreshAll,
   evictWeather,
   clearWeatherCache,
 } from './weatherCache';
 export type { WeatherSnapshot } from './weatherCache';
 export { currentHourPoint, firstDaylightHourOnDay } from './verdictTiming';
+export {
+  getVerdictStatus,
+  getVerdictForDay,
+  refreshSpot,
+  refreshAll,
+} from './weatherStore';
+export type { VerdictStatus } from './weatherStore';
