@@ -7,6 +7,22 @@ import ReactTestRenderer, { act } from 'react-test-renderer';
 import { Text } from 'react-native';
 import App from '../App';
 import { flush } from '../src/testUtils/flush';
+import { getCurrentPosition } from '../src/location/deviceLocation';
+
+jest.mock('../src/location/deviceLocation', () => {
+  class MockLocationPermissionDeniedError extends Error {}
+  class MockLocationUnavailableError extends Error {}
+  return {
+    getCurrentPosition: jest.fn(),
+    LocationPermissionDeniedError: MockLocationPermissionDeniedError,
+    LocationUnavailableError: MockLocationUnavailableError,
+  };
+});
+jest.mock('../src/screens/SpotMapView');
+
+const mockGetCurrentPosition = getCurrentPosition as jest.MockedFunction<
+  typeof getCurrentPosition
+>;
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
@@ -57,6 +73,9 @@ beforeEach(() => {
     ok: true,
     json: async () => buildOpenMeteoResponse(),
   }) as unknown as typeof fetch;
+  mockGetCurrentPosition
+    .mockReset()
+    .mockResolvedValue({ latitude: 51.5, longitude: -0.1 });
 });
 
 describe('Pre-Flight end-to-end flow', () => {
@@ -88,10 +107,9 @@ describe('Pre-Flight end-to-end flow', () => {
     act(() => {
       find('add-flying-spot').props.onPress();
     });
+    await flush();
     act(() => {
       find('spot-name-input').props.onChangeText('Ridge Launch');
-      find('spot-latitude-input').props.onChangeText('51.5');
-      find('spot-longitude-input').props.onChangeText('-0.1');
     });
     await act(async () => {
       await find('save-flying-spot').props.onPress();

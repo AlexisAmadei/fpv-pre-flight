@@ -21,6 +21,7 @@ import {
 import type { WeatherSnapshot } from '../weather';
 import type { DroneProfile, FlyingSpot, VerdictLevel } from '../weather/types';
 import { sharedStyles } from './sharedStyles';
+import { SpotMapView } from './SpotMapView';
 
 type WeatherState =
   | { status: 'loading' }
@@ -122,6 +123,7 @@ export function FlyingSpotDetailScreen({ spot, onCreateDroneProfile }: Props) {
   return (
     <ScrollView style={styles.container} testID="flying-spot-detail-screen">
       <Text style={styles.title}>{spot.name}</Text>
+      <SpotMapView coordinates={spot.coordinates} testID="spot-map" />
       {stale && (
         <Text style={styles.staleLabel} testID="stale-label">
           Showing last known conditions (stale)

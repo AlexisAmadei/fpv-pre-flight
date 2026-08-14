@@ -17,6 +17,7 @@ jest.mock('../../droneProfiles/droneProfileRepository', () => ({
 jest.mock('../../weather/weatherCache', () => ({
   getWeather: jest.fn(),
 }));
+jest.mock('../SpotMapView');
 
 const mockGetDroneProfile = getDroneProfile as jest.MockedFunction<
   typeof getDroneProfile

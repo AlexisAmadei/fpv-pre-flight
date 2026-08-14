@@ -12,6 +12,7 @@ jest.mock('../../droneProfiles/droneProfileRepository', () => ({
 jest.mock('../../weather/weatherCache', () => ({
   getWeather: jest.fn(),
 }));
+jest.mock('../SpotMapView');
 
 const mockGetDroneProfile = getDroneProfile as jest.MockedFunction<
   typeof getDroneProfile
@@ -84,6 +85,13 @@ describe('FlyingSpotDetailScreen', () => {
     expect(
       renderer!.root.findByProps({ testID: 'verdict-badge' }),
     ).toBeTruthy();
+    expect(
+      renderer!.root.findByProps({ testID: 'spot-map' }).props.coordinates,
+    ).toEqual(spot.coordinates);
+    expect(
+      renderer!.root.findByProps({ testID: 'spot-map' }).props
+        .onCoordinatesChange,
+    ).toBeUndefined();
   });
 
   it('shows an error state with retry when there is no cached forecast and the fetch fails', async () => {
