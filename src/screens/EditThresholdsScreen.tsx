@@ -1,31 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import {
-  getDroneProfile,
-  saveDroneProfile,
+  deleteDroneProfile,
+  getActiveDroneProfile,
+  getActiveDroneProfileId,
+  setActiveDroneProfile,
+  updateDroneProfile,
 } from '../droneProfiles/droneProfileRepository';
+import { evictChecklist } from '../checklists/checklistRepository';
 import { DEFAULT_THRESHOLDS_BY_WEIGHT_CLASS } from '../weather/weightClasses';
 import type { DroneProfile, VerdictThresholds } from '../weather/types';
-import { sharedStyles } from './sharedStyles';
+import { Button, Card, MetaLabel, Mono } from '../ui/components';
+import { WEIGHT_CLASS_LABELS } from '../ui/theme';
 
 const METRICS: { key: keyof VerdictThresholds; label: string; unit: string }[] =
   [
-    { key: 'windSpeedMax', label: 'Max wind speed', unit: 'km/h' },
-    { key: 'windGustsMax', label: 'Max gusts', unit: 'km/h' },
+    { key: 'windSpeedMax', label: 'Wind speed', unit: 'km/h' },
+    { key: 'windGustsMax', label: 'Gust speed', unit: 'km/h' },
     {
       key: 'precipitationProbabilityMax',
-      label: 'Max rain probability',
+      label: 'Rain probability',
       unit: '%',
     },
-    { key: 'uvIndexMax', label: 'Max UV index', unit: '' },
+    { key: 'uvIndexMax', label: 'UV index', unit: 'index' },
   ];
 
 type ThresholdText = Record<keyof VerdictThresholds, string>;
@@ -39,17 +44,38 @@ function textFromThresholds(thresholds: VerdictThresholds): ThresholdText {
   };
 }
 
-export function EditThresholdsScreen({ onDone }: { onDone: () => void }) {
+/**
+ * Edits one DroneProfile's Thresholds. `profile` is passed in when arriving
+ * from the fleet screen; without one it falls back to whichever drone is
+ * currently flying, which is how the spot list's shortcut reaches this screen.
+ */
+export function EditThresholdsScreen({
+  profile: initialProfile,
+  onDone,
+}: {
+  profile?: DroneProfile;
+  onDone: () => void;
+}) {
   // undefined = still loading, null = no profile saved (or failed to load)
   const [profile, setProfile] = useState<DroneProfile | null | undefined>(
-    undefined,
+    initialProfile ?? undefined,
   );
   // Text is edited freely (so clearing a field doesn't snap to 0); only
   // parsed into the numeric thresholds on save.
-  const [text, setText] = useState<ThresholdText | null>(null);
+  const [text, setText] = useState<ThresholdText | null>(
+    initialProfile ? textFromThresholds(initialProfile.thresholds) : null,
+  );
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
-    getDroneProfile()
+    getActiveDroneProfileId().then(setActiveId);
+  }, []);
+
+  useEffect(() => {
+    if (initialProfile) {
+      return;
+    }
+    getActiveDroneProfile()
       .then(loaded => {
         setProfile(loaded);
         setText(loaded ? textFromThresholds(loaded.thresholds) : null);
@@ -58,56 +84,127 @@ export function EditThresholdsScreen({ onDone }: { onDone: () => void }) {
         setProfile(null);
         setText(null);
       });
-  }, []);
+  }, [initialProfile]);
 
   if (profile === undefined) {
-    return (
-      <ActivityIndicator style={styles.loading} testID="thresholds-loading" />
-    );
+    return <ActivityIndicator className="flex-1" testID="thresholds-loading" />;
   }
 
   if (profile === null || text === null) {
     return (
-      <View style={styles.container}>
-        <Text testID="no-profile-message">Create a drone profile first.</Text>
+      <View className="flex-1 bg-background px-5">
+        <Text className="text-[13px] text-muted-foreground" testID="no-profile-message">
+          Create a drone profile first.
+        </Text>
       </View>
     );
   }
 
+  const saved = profile;
+
   function resetMetric(key: keyof VerdictThresholds) {
-    const defaults = DEFAULT_THRESHOLDS_BY_WEIGHT_CLASS[profile!.weightClass];
+    const defaults = DEFAULT_THRESHOLDS_BY_WEIGHT_CLASS[saved.weightClass];
     setText(current =>
       current ? { ...current, [key]: String(defaults[key]) } : current,
     );
   }
 
   async function handleSave() {
-    const thresholds = { ...profile!.thresholds };
+    const thresholds = { ...saved.thresholds };
     for (const metric of METRICS) {
       const parsed = Number(text![metric.key]);
       if (text![metric.key].trim() !== '' && !Number.isNaN(parsed)) {
         thresholds[metric.key] = parsed;
       }
     }
-    await saveDroneProfile({ ...profile!, thresholds });
+    await updateDroneProfile({ ...saved, thresholds });
     onDone();
   }
 
+  function handleDelete() {
+    Alert.alert('Delete drone', `Delete "${saved.name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await deleteDroneProfile(saved.id);
+          await evictChecklist(saved.id);
+          onDone();
+        },
+      },
+    ]);
+  }
+
+  async function handleFlyThis() {
+    await setActiveDroneProfile(saved.id);
+    setActiveId(saved.id);
+  }
+
   const defaults = DEFAULT_THRESHOLDS_BY_WEIGHT_CLASS[profile.weightClass];
+  const isActive = profile.id === activeId;
 
   return (
-    <ScrollView style={styles.container} testID="edit-thresholds-screen">
-      <Text style={styles.title}>{profile.name}</Text>
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerClassName="px-5 pb-8 gap-4"
+      testID="edit-thresholds-screen"
+    >
+      <Card className="flex-row items-center justify-between gap-3 p-3.5">
+        <View className="min-w-0">
+          <Text className="text-[15px] font-bold text-foreground">
+            {profile.name}
+          </Text>
+          <Mono className="mt-0.5 text-muted-foreground">
+            {WEIGHT_CLASS_LABELS[profile.weightClass]}
+          </Mono>
+        </View>
+        {isActive ? (
+          <View className="bg-primary px-1.5 py-1">
+            <Text className="font-mono text-[9px] uppercase tracking-[1px] text-primary-foreground">
+              Flying
+            </Text>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleFlyThis}
+            testID="fly-this-drone"
+            className="border border-border bg-background px-2 py-1.5"
+          >
+            <Text className="font-mono text-[9px] uppercase tracking-[1px] text-foreground">
+              Fly this
+            </Text>
+          </Pressable>
+        )}
+      </Card>
+
+      <MetaLabel>Thresholds — override any value</MetaLabel>
+
       {METRICS.map(metric => {
         const isDefault = Number(text[metric.key]) === defaults[metric.key];
         return (
-          <View key={metric.key} style={styles.row}>
-            <Text style={styles.label}>
-              {metric.label} {metric.unit ? `(${metric.unit})` : ''}
-            </Text>
-            <View style={styles.rowInputs}>
+          <Card key={metric.key} className="p-3.5">
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-[13px] font-semibold text-foreground">
+                {metric.label}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isDefault }}
+                disabled={isDefault}
+                onPress={() => resetMetric(metric.key)}
+                testID={`threshold-reset-${metric.key}`}
+                className={isDefault ? 'opacity-30' : ''}
+              >
+                <Text className="font-mono text-[10px] uppercase tracking-[1px] text-muted-foreground">
+                  Reset
+                </Text>
+              </Pressable>
+            </View>
+            <View className="flex-row items-center gap-2">
               <TextInput
-                style={styles.input}
+                className="flex-1 border border-input bg-background px-3 py-2 text-[14px] text-foreground"
                 keyboardType="numeric"
                 value={text[metric.key]}
                 onChangeText={value =>
@@ -117,54 +214,24 @@ export function EditThresholdsScreen({ onDone }: { onDone: () => void }) {
                 }
                 testID={`threshold-input-${metric.key}`}
               />
-              <Pressable
-                disabled={isDefault}
-                onPress={() => resetMetric(metric.key)}
-                testID={`threshold-reset-${metric.key}`}
-                style={[
-                  styles.resetButton,
-                  isDefault && styles.resetButtonDisabled,
-                ]}
-              >
-                <Text style={styles.resetButtonText}>Reset</Text>
-              </Pressable>
+              <Mono className="text-muted-foreground">{metric.unit}</Mono>
             </View>
-          </View>
+          </Card>
         );
       })}
+
+      <Button label="Save Thresholds" onPress={handleSave} testID="save-thresholds" />
+
       <Pressable
-        style={[sharedStyles.primaryButton, styles.saveButton]}
-        onPress={handleSave}
-        testID="save-thresholds"
+        accessibilityRole="button"
+        onPress={handleDelete}
+        testID="delete-drone"
+        className="items-center py-1"
       >
-        <Text style={sharedStyles.primaryButtonText}>Save</Text>
+        <Text className="text-[12.5px] text-destructive underline">
+          Delete this drone
+        </Text>
       </Pressable>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  loading: { flex: 1 },
-  title: { fontSize: 18, fontWeight: '700', marginBottom: 16 },
-  row: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 6 },
-  rowInputs: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-  },
-  resetButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  resetButtonDisabled: { opacity: 0.3 },
-  resetButtonText: { color: '#222' },
-  saveButton: { marginTop: 8, marginBottom: 32 },
-});

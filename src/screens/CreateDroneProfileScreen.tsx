@@ -1,25 +1,13 @@
 import React, { useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { generateId } from '../ids';
-import { saveDroneProfile } from '../droneProfiles/droneProfileRepository';
+import { addDroneProfile } from '../droneProfiles/droneProfileRepository';
 import { DEFAULT_THRESHOLDS_BY_WEIGHT_CLASS } from '../weather/weightClasses';
 import type { WeightClass } from '../weather/types';
-import { sharedStyles } from './sharedStyles';
+import { Button, Card, Field, MetaLabel, SectionTitle } from '../ui/components';
+import { WEIGHT_CLASS_LABELS } from '../ui/theme';
 
-const WEIGHT_CLASSES: { value: WeightClass; label: string }[] = [
-  { value: 'tiny-whoop', label: 'Tiny whoop' },
-  { value: '3-inch', label: '3"' },
-  { value: '5-inch', label: '5"' },
-  { value: '7-inch-plus', label: '7"+ freestyle' },
-  { value: 'long-range', label: 'Long-range' },
-];
+const WEIGHT_CLASSES = Object.keys(WEIGHT_CLASS_LABELS) as WeightClass[];
 
 export function CreateDroneProfileScreen({
   onCreated,
@@ -38,7 +26,7 @@ export function CreateDroneProfileScreen({
     if (!weightClass) {
       return;
     }
-    await saveDroneProfile({
+    await addDroneProfile({
       id: generateId(),
       name: name.trim(),
       weightClass,
@@ -48,90 +36,88 @@ export function CreateDroneProfileScreen({
   }
 
   return (
-    <ScrollView style={styles.container} testID="create-drone-profile-screen">
-      <Text style={styles.label}>Drone name</Text>
-      <TextInput
-        style={styles.input}
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerClassName="px-5 pb-8 gap-4"
+      testID="create-drone-profile-screen"
+    >
+      <Field
+        label="Name"
         value={name}
         onChangeText={setName}
         placeholder="e.g. My Freestyle Quad"
         testID="drone-name-input"
       />
 
-      <Text style={styles.label}>Weight class</Text>
-      <View style={styles.chipRow}>
-        {WEIGHT_CLASSES.map(option => (
-          <Pressable
-            key={option.value}
-            testID={`weight-class-${option.value}`}
-            onPress={() => setWeightClass(option.value)}
-            style={[
-              styles.chip,
-              weightClass === option.value && styles.chipSelected,
-            ]}
-          >
-            <Text
-              style={
-                weightClass === option.value
-                  ? styles.chipTextSelected
-                  : styles.chipText
-              }
-            >
-              {option.label}
-            </Text>
-          </Pressable>
-        ))}
+      <View>
+        <MetaLabel className="mb-1.5">Weight Class</MetaLabel>
+        <View className="flex-row flex-wrap gap-2">
+          {WEIGHT_CLASSES.map(option => {
+            const selected = weightClass === option;
+            return (
+              <Pressable
+                key={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                testID={`weight-class-${option}`}
+                onPress={() => setWeightClass(option)}
+                className={`border px-3 py-2 ${
+                  selected
+                    ? 'border-primary bg-primary'
+                    : 'border-border bg-background'
+                }`}
+              >
+                <Text
+                  className={`text-[12px] font-semibold ${
+                    selected ? 'text-primary-foreground' : 'text-foreground'
+                  }`}
+                >
+                  {WEIGHT_CLASS_LABELS[option]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       {thresholds && (
-        <View style={styles.thresholds} testID="default-thresholds-preview">
-          <Text style={styles.sectionTitle}>Default thresholds</Text>
-          <Text>Wind: {thresholds.windSpeedMax} km/h</Text>
-          <Text>Gusts: {thresholds.windGustsMax} km/h</Text>
-          <Text>
-            Rain probability: {thresholds.precipitationProbabilityMax}%
-          </Text>
-          <Text>UV index: {thresholds.uvIndexMax}</Text>
-        </View>
+        <Card className="gap-1.5 p-3.5" testID="default-thresholds-preview">
+          <SectionTitle className="mb-1">
+            Default Thresholds — {WEIGHT_CLASS_LABELS[weightClass!]}
+          </SectionTitle>
+          <ThresholdRow
+            label="Wind speed"
+            value={`${thresholds.windSpeedMax} km/h`}
+          />
+          <ThresholdRow
+            label="Gust speed"
+            value={`${thresholds.windGustsMax} km/h`}
+          />
+          <ThresholdRow
+            label="Rain probability"
+            value={`${thresholds.precipitationProbabilityMax}%`}
+          />
+          <ThresholdRow label="UV index" value={`${thresholds.uvIndexMax}`} />
+        </Card>
       )}
 
-      <Pressable
-        testID="save-drone-profile"
-        disabled={!canSave}
+      <Button
+        label="Save Drone"
         onPress={handleSave}
-        style={[
-          sharedStyles.primaryButton,
-          styles.saveButton,
-          !canSave && sharedStyles.primaryButtonDisabled,
-        ]}
-      >
-        <Text style={sharedStyles.primaryButtonText}>Save drone profile</Text>
-      </Pressable>
+        disabled={!canSave}
+        testID="save-drone-profile"
+      />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10 },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  chipSelected: { backgroundColor: '#2f6fed', borderColor: '#2f6fed' },
-  chipText: { color: '#222' },
-  chipTextSelected: { color: '#fff' },
-  thresholds: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#f2f2f2',
-  },
-  sectionTitle: { fontWeight: '600', marginBottom: 4 },
-  saveButton: { marginTop: 24, marginBottom: 32 },
-});
+function ThresholdRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-row justify-between">
+      <Text className="text-[12.5px] text-foreground">{label}</Text>
+      <Text className="text-[12.5px] font-semibold tabular-nums text-foreground">
+        {value}
+      </Text>
+    </View>
+  );
+}

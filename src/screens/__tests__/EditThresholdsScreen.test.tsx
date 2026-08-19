@@ -2,22 +2,25 @@ import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { EditThresholdsScreen } from '../EditThresholdsScreen';
 import {
-  getDroneProfile,
-  saveDroneProfile,
+  getActiveDroneProfile,
+  updateDroneProfile,
 } from '../../droneProfiles/droneProfileRepository';
 import { flush } from '../../testUtils/flush';
 import type { DroneProfile } from '../../weather/types';
 
 jest.mock('../../droneProfiles/droneProfileRepository', () => ({
-  getDroneProfile: jest.fn(),
-  saveDroneProfile: jest.fn().mockResolvedValue(undefined),
+  getActiveDroneProfile: jest.fn(),
+  updateDroneProfile: jest.fn().mockResolvedValue(undefined),
+  getActiveDroneProfileId: jest.fn().mockResolvedValue(null),
+  setActiveDroneProfile: jest.fn().mockResolvedValue(undefined),
+  deleteDroneProfile: jest.fn().mockResolvedValue(undefined),
 }));
 
-const mockGetDroneProfile = getDroneProfile as jest.MockedFunction<
-  typeof getDroneProfile
+const mockGetDroneProfile = getActiveDroneProfile as jest.MockedFunction<
+  typeof getActiveDroneProfile
 >;
-const mockSaveDroneProfile = saveDroneProfile as jest.MockedFunction<
-  typeof saveDroneProfile
+const mockSaveDroneProfile = updateDroneProfile as jest.MockedFunction<
+  typeof updateDroneProfile
 >;
 
 const profile: DroneProfile = {
