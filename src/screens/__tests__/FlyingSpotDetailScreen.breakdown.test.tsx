@@ -2,7 +2,7 @@ import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { Text } from 'react-native';
 import { FlyingSpotDetailScreen } from '../FlyingSpotDetailScreen';
-import { getDroneProfile } from '../../droneProfiles/droneProfileRepository';
+import { listDroneProfiles } from '../../droneProfiles/droneProfileRepository';
 import { getWeather } from '../../weather/weatherCache';
 import { flush } from '../../testUtils/flush';
 import type {
@@ -12,15 +12,17 @@ import type {
 } from '../../weather/types';
 
 jest.mock('../../droneProfiles/droneProfileRepository', () => ({
-  getDroneProfile: jest.fn(),
+  listDroneProfiles: jest.fn(),
+  getActiveDroneProfileId: jest.fn().mockResolvedValue(null),
+  setActiveDroneProfile: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../../weather/weatherCache', () => ({
   getWeather: jest.fn(),
 }));
 jest.mock('../SpotMapView');
 
-const mockGetDroneProfile = getDroneProfile as jest.MockedFunction<
-  typeof getDroneProfile
+const mockListDroneProfiles = listDroneProfiles as jest.MockedFunction<
+  typeof listDroneProfiles
 >;
 const mockGetWeather = getWeather as jest.MockedFunction<typeof getWeather>;
 
@@ -52,9 +54,10 @@ function point(time: string, windSpeed: number) {
   };
 }
 
-// "Today" is fixed far in the past so currentHourPoint() falls back to the
-// first point regardless of when this test runs — only the breakdown and
-// preview flow are under test here, not the default-badge timing.
+// "Today" is fixed in the past and the screen is given an explicit `now`
+// inside that day's daylight window, so the default badge resolves the same
+// way regardless of when this test runs — only the breakdown and preview flow
+// are under test here, not the default-badge timing.
 const forecast: WeatherForecast = {
   unitSystem: 'metric',
   hourly: [
@@ -98,7 +101,7 @@ const forecast: WeatherForecast = {
 };
 
 beforeEach(() => {
-  mockGetDroneProfile.mockReset().mockResolvedValue(profile);
+  mockListDroneProfiles.mockReset().mockResolvedValue([profile]);
   mockGetWeather.mockReset().mockResolvedValue({ stale: false, forecast });
 });
 
@@ -107,14 +110,18 @@ describe('FlyingSpotDetailScreen breakdown + preview', () => {
     let renderer: ReactTestRenderer.ReactTestRenderer;
     await act(async () => {
       renderer = ReactTestRenderer.create(
-        <FlyingSpotDetailScreen spot={spot} onCreateDroneProfile={jest.fn()} />,
+        <FlyingSpotDetailScreen
+          spot={spot}
+          onCreateDroneProfile={jest.fn()}
+          now={new Date('2020-01-01T12:00')}
+        />,
       );
     });
     await flush();
 
-    const defaultBadgeText = renderer!.root
-      .findByProps({ testID: 'verdict-badge' })
-      .findByType(Text).props.children;
+    const defaultBadgeText = renderer!.root.findByProps({
+      testID: 'verdict-label',
+    }).props.children;
 
     const daylightList = renderer!.root.findByProps({
       testID: 'daylight-hours-list',
@@ -135,13 +142,14 @@ describe('FlyingSpotDetailScreen breakdown + preview', () => {
     const previewTexts = renderer!.root
       .findByProps({ testID: 'preview-verdict' })
       .findAllByType(Text)
-      .map(t => t.props.children);
-    expect(previewTexts).toContain('RED');
+      .map(t => t.props.children)
+      .flat()
+      .join(' ');
+    expect(previewTexts).toContain('NO-GO');
 
     // Previewing a future day never changes the default badge (ADR-0006).
     expect(
-      renderer!.root.findByProps({ testID: 'verdict-badge' }).findByType(Text)
-        .props.children,
+      renderer!.root.findByProps({ testID: 'verdict-label' }).props.children,
     ).toBe(defaultBadgeText);
 
     act(() => {

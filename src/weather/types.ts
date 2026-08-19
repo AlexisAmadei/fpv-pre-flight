@@ -78,3 +78,19 @@ export interface Verdict {
   /** Displayed alongside the verdict but never weighted into it. */
   cloudCover: number;
 }
+
+/** One preflight item, either from the GenericChecklist or added to a DroneProfile. */
+export interface ChecklistItem {
+  id: string;
+  label: string;
+}
+
+/**
+ * A DroneProfile's Checklist as shown to the pilot: the GenericChecklist plus
+ * that profile's own additions, each carrying whether it is currently ticked.
+ */
+export interface ChecklistEntry extends ChecklistItem {
+  done: boolean;
+  /** Generic items are shared across profiles and cannot be deleted. */
+  generic: boolean;
+}

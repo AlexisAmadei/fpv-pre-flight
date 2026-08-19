@@ -3,11 +3,8 @@ import {
   ActivityIndicator,
   AppState,
   Linking,
-  Pressable,
   ScrollView,
-  StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { generateId } from '../ids';
@@ -18,7 +15,7 @@ import {
 } from '../location/deviceLocation';
 import type { Coordinates } from '../weather/types';
 import { SpotMapView } from './SpotMapView';
-import { sharedStyles } from './sharedStyles';
+import { Button, Field, MetaLabel, Mono } from '../ui/components';
 
 type LocationState =
   | { status: 'loading' }
@@ -85,83 +82,96 @@ export function AddFlyingSpotScreen({ onAdded }: { onAdded: () => void }) {
 
   if (locationState.status === 'loading') {
     return (
-      <ActivityIndicator style={styles.loading} testID="location-loading" />
+      <View className="flex-1 items-center justify-center gap-4 bg-background">
+        <ActivityIndicator testID="location-loading" />
+        <Text className="text-[13px] text-muted-foreground">
+          Getting your location…
+        </Text>
+      </View>
     );
   }
 
   if (locationState.status === 'permission-denied') {
     return (
-      <View style={styles.container} testID="location-permission-denied">
-        <Text style={styles.message}>
-          Location access is needed to add a flying spot. Grant permission in
-          your device settings.
+      <View
+        className="flex-1 items-center gap-3.5 bg-background px-8 py-14"
+        testID="location-permission-denied"
+      >
+        <Text className="text-[14px] font-semibold text-foreground">
+          Location access denied
         </Text>
-        <Pressable
-          style={sharedStyles.primaryButton}
+        <Text className="text-center text-[13px] leading-5 text-muted-foreground">
+          Pre-Flight needs your location to create a spot here. Enable it in
+          Settings, then come back — we'll retry automatically.
+        </Text>
+        <Button
+          label="Open Settings"
+          size="sm"
           onPress={() => Linking.openSettings()}
           testID="open-location-settings"
-        >
-          <Text style={sharedStyles.primaryButtonText}>Open Settings</Text>
-        </Pressable>
+        />
       </View>
     );
   }
 
   if (locationState.status === 'error') {
     return (
-      <View style={styles.container} testID="location-error">
-        <Text style={styles.message}>
-          Couldn't determine your location.
+      <View
+        className="flex-1 items-center gap-3.5 bg-background px-8 py-14"
+        testID="location-error"
+      >
+        <Text className="text-[14px] font-semibold text-foreground">
+          Couldn't get a location fix
         </Text>
-        <Pressable
-          style={sharedStyles.primaryButton}
+        <Text className="text-center text-[13px] leading-5 text-muted-foreground">
+          GPS signal may be weak indoors. Try again outside or with a clear sky
+          view.
+        </Text>
+        <Button
+          label="Retry"
+          size="sm"
           onPress={fetchLocation}
           testID="retry-location"
-        >
-          <Text style={sharedStyles.primaryButtonText}>Retry</Text>
-        </Pressable>
+        />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} testID="add-flying-spot-screen">
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        style={styles.input}
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerClassName="px-5 pb-8 gap-4"
+      testID="add-flying-spot-screen"
+    >
+      <Field
+        label="Name"
         value={name}
         onChangeText={setName}
-        placeholder="e.g. Ridge Launch"
+        placeholder="e.g. Backyard, Riverside Park"
         testID="spot-name-input"
       />
 
-      <SpotMapView
-        coordinates={locationState.coordinates}
-        onCoordinatesChange={handleCoordinatesChange}
-        testID="spot-map"
-      />
+      <View>
+        <MetaLabel className="mb-1.5">Position — drag to fine-tune</MetaLabel>
+        <View className="border border-border">
+          <SpotMapView
+            coordinates={locationState.coordinates}
+            onCoordinatesChange={handleCoordinatesChange}
+            testID="spot-map"
+          />
+        </View>
+        <Mono className="mt-1.5 text-muted-foreground">
+          {locationState.coordinates.latitude.toFixed(4)},{' '}
+          {locationState.coordinates.longitude.toFixed(4)}
+        </Mono>
+      </View>
 
-      <Pressable
-        testID="save-flying-spot"
-        disabled={!canSave}
+      <Button
+        label="Save Flying Spot"
         onPress={handleSave}
-        style={[
-          sharedStyles.primaryButton,
-          styles.saveButton,
-          !canSave && sharedStyles.primaryButtonDisabled,
-        ]}
-      >
-        <Text style={sharedStyles.primaryButtonText}>Save flying spot</Text>
-      </Pressable>
+        disabled={!canSave}
+        testID="save-flying-spot"
+      />
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  loading: { flex: 1 },
-  message: { fontSize: 16, marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10 },
-  saveButton: { marginTop: 24, marginBottom: 32 },
-});

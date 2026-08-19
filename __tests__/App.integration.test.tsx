@@ -4,7 +4,6 @@
 
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
-import { Text } from 'react-native';
 import App from '../App';
 import { flush } from '../src/testUtils/flush';
 import { getCurrentPosition } from '../src/location/deviceLocation';
@@ -127,8 +126,8 @@ describe('Pre-Flight end-to-end flow', () => {
     });
     await flush();
 
-    const badge = find('verdict-badge');
-    expect(badge.findByType(Text).props.children).toBe('GREEN');
+    expect(find('verdict-badge')).toBeTruthy();
+    expect(find('verdict-label').props.children).toBe('GO');
     expect(find('wind-speed')).toBeTruthy();
     expect(find('cloud-cover')).toBeTruthy();
   });

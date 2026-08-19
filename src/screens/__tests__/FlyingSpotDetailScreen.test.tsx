@@ -1,21 +1,23 @@
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
 import { FlyingSpotDetailScreen } from '../FlyingSpotDetailScreen';
-import { getDroneProfile } from '../../droneProfiles/droneProfileRepository';
+import { listDroneProfiles } from '../../droneProfiles/droneProfileRepository';
 import { getWeather } from '../../weather/weatherCache';
 import { flush } from '../../testUtils/flush';
 import type { DroneProfile, FlyingSpot } from '../../weather/types';
 
 jest.mock('../../droneProfiles/droneProfileRepository', () => ({
-  getDroneProfile: jest.fn(),
+  listDroneProfiles: jest.fn(),
+  getActiveDroneProfileId: jest.fn().mockResolvedValue(null),
+  setActiveDroneProfile: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../../weather/weatherCache', () => ({
   getWeather: jest.fn(),
 }));
 jest.mock('../SpotMapView');
 
-const mockGetDroneProfile = getDroneProfile as jest.MockedFunction<
-  typeof getDroneProfile
+const mockListDroneProfiles = listDroneProfiles as jest.MockedFunction<
+  typeof listDroneProfiles
 >;
 const mockGetWeather = getWeather as jest.MockedFunction<typeof getWeather>;
 
@@ -37,13 +39,13 @@ const profile: DroneProfile = {
 };
 
 beforeEach(() => {
-  mockGetDroneProfile.mockReset();
+  mockListDroneProfiles.mockReset();
   mockGetWeather.mockReset();
 });
 
 describe('FlyingSpotDetailScreen', () => {
   it('shows a stale label when the cache falls back to an old forecast', async () => {
-    mockGetDroneProfile.mockResolvedValue(profile);
+    mockListDroneProfiles.mockResolvedValue([profile]);
     mockGetWeather.mockResolvedValue({
       stale: true,
       forecast: {
@@ -95,7 +97,7 @@ describe('FlyingSpotDetailScreen', () => {
   });
 
   it('shows an error state with retry when there is no cached forecast and the fetch fails', async () => {
-    mockGetDroneProfile.mockResolvedValue(profile);
+    mockListDroneProfiles.mockResolvedValue([profile]);
     mockGetWeather.mockRejectedValue(new Error('offline'));
 
     let renderer: ReactTestRenderer.ReactTestRenderer;
@@ -115,7 +117,7 @@ describe('FlyingSpotDetailScreen', () => {
   });
 
   it('prompts to create a drone profile instead of showing a broken Verdict', async () => {
-    mockGetDroneProfile.mockResolvedValue(null);
+    mockListDroneProfiles.mockResolvedValue([]);
     mockGetWeather.mockResolvedValue({
       stale: false,
       forecast: { unitSystem: 'metric', hourly: [], daily: [] },

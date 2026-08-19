@@ -1,19 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import {
   deleteFlyingSpot,
   listFlyingSpots,
 } from '../flyingSpots/flyingSpotRepository';
-import { getDroneProfile } from '../droneProfiles/droneProfileRepository';
+import { listDroneProfiles } from '../droneProfiles/droneProfileRepository';
 import { evictWeather, refreshAll } from '../weather/weatherCache';
-import type { DroneProfile, FlyingSpot } from '../weather/types';
+import type { FlyingSpot } from '../weather/types';
+import { Button, Card, Divider, MetaLabel, Mono } from '../ui/components';
 
 interface Props {
   onAddSpot: () => void;
@@ -27,14 +21,14 @@ export function FlyingSpotListScreen({
   onManageDroneProfile,
 }: Props) {
   const [spots, setSpots] = useState<FlyingSpot[]>([]);
-  const [droneProfile, setDroneProfile] = useState<DroneProfile | null>(null);
+  const [hasProfile, setHasProfile] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const reload = useCallback(() => {
     listFlyingSpots().then(setSpots);
-    getDroneProfile()
-      .then(setDroneProfile)
-      .catch(() => setDroneProfile(null));
+    listDroneProfiles()
+      .then(profiles => setHasProfile(profiles.length > 0))
+      .catch(() => setHasProfile(false));
   }, []);
 
   useEffect(() => {
@@ -67,93 +61,106 @@ export function FlyingSpotListScreen({
     }
   }
 
+  const refreshDisabled = refreshing || spots.length === 0;
+
   return (
-    <View style={styles.container} testID="flying-spot-list-screen">
-      <View style={styles.header}>
-        <Pressable onPress={onManageDroneProfile} testID="manage-drone-profile">
-          <Text style={styles.link}>
-            {droneProfile ? droneProfile.name : 'Create drone profile'}
+    <View className="flex-1 bg-background" testID="flying-spot-list-screen">
+      <View className="flex-row items-start justify-between px-5 pb-3">
+        <View>
+          <Text className="text-[24px] font-bold uppercase tracking-[0.5px] text-foreground">
+            Pre-Flight
           </Text>
-        </Pressable>
-        <Pressable
-          onPress={handleRefreshAll}
-          disabled={refreshing || spots.length === 0}
-          testID="refresh-all"
-        >
-          <Text
-            style={[
-              styles.link,
-              (refreshing || spots.length === 0) && styles.linkDisabled,
-            ]}
+          <MetaLabel className="mt-1">
+            {spots.length === 1 ? '1 spot saved' : `${spots.length} spots saved`}
+          </MetaLabel>
+        </View>
+
+        <View className="flex-row gap-2">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Refresh all"
+            accessibilityState={{ disabled: refreshDisabled }}
+            onPress={handleRefreshAll}
+            disabled={refreshDisabled}
+            testID="refresh-all"
+            className={`h-9 items-center justify-center border border-border bg-background px-3 ${
+              refreshDisabled ? 'opacity-40' : ''
+            }`}
           >
-            {refreshing ? 'Refreshing…' : 'Refresh all'}
-          </Text>
-        </Pressable>
+            <Text className="font-mono text-[10px] uppercase tracking-[1px] text-foreground">
+              {refreshing ? 'Syncing' : 'Refresh'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={onManageDroneProfile}
+            testID="manage-drone-profile"
+            className="h-9 items-center justify-center border border-border bg-background px-3"
+          >
+            <Text className="font-mono text-[10px] uppercase tracking-[1px] text-foreground">
+              Drones
+            </Text>
+            {!hasProfile && (
+              <View className="absolute -right-1 -top-1 h-2 w-2 bg-destructive" />
+            )}
+          </Pressable>
+        </View>
       </View>
+
+      <Divider className="mx-5 mb-3.5" />
 
       <FlatList
         data={spots}
         keyExtractor={spot => spot.id}
+        contentContainerClassName="px-5 gap-2.5"
         ListEmptyComponent={
-          <Text style={styles.empty}>No flying spots yet.</Text>
+          <View className="items-center gap-3.5 px-8 py-14">
+            <Text className="max-w-[240px] text-center text-[13px] leading-5 text-muted-foreground">
+              No flying spots yet. Add the place you fly to check conditions
+              before heading out.
+            </Text>
+          </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <Card className="flex-row items-center gap-3 p-3.5">
             <Pressable
-              style={styles.rowMain}
+              accessibilityRole="button"
+              className="min-w-0 flex-1"
               onPress={() => onOpenSpot(item)}
               testID={`open-spot-${item.id}`}
             >
-              <Text style={styles.rowTitle}>{item.name}</Text>
+              <Text className="text-[15px] font-semibold text-foreground">
+                {item.name}
+              </Text>
+              <Mono className="mt-0.5 text-muted-foreground">
+                {item.coordinates.latitude.toFixed(4)},{' '}
+                {item.coordinates.longitude.toFixed(4)}
+              </Mono>
             </Pressable>
+
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${item.name}`}
               onPress={() => handleDelete(item)}
               testID={`delete-spot-${item.id}`}
+              className="px-1 py-1"
             >
-              <Text style={styles.deleteText}>Delete</Text>
+              <Text className="font-mono text-[10px] uppercase tracking-[1px] text-destructive">
+                Delete
+              </Text>
             </Pressable>
-          </View>
+          </Card>
         )}
       />
 
-      <Pressable
-        style={styles.addButton}
-        onPress={onAddSpot}
-        testID="add-flying-spot"
-      >
-        <Text style={styles.addButtonText}>+ Add flying spot</Text>
-      </Pressable>
+      <View className="px-5 pb-7 pt-4">
+        <Button
+          label="+ New Flying Spot"
+          onPress={onAddSpot}
+          testID="add-flying-spot"
+        />
+      </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  link: { color: '#2f6fed', fontWeight: '600' },
-  linkDisabled: { opacity: 0.4 },
-  empty: { color: '#666', marginTop: 24, textAlign: 'center' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  rowMain: { flex: 1 },
-  rowTitle: { fontSize: 16 },
-  deleteText: { color: '#d33' },
-  addButton: {
-    marginTop: 16,
-    backgroundColor: '#2f6fed',
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-  },
-  addButtonText: { color: '#fff', fontWeight: '600' },
-});
