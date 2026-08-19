@@ -16,5 +16,8 @@ module.exports = {
   moduleNameMapper: {
     '^@react-native-async-storage/async-storage$':
       '@react-native-async-storage/async-storage/jest',
+    // The NativeWind stylesheet is compiled by Metro, not Jest; under test the
+    // className props are inert, so an empty stub is enough.
+    '[.]css$': '<rootDir>/jest.styleMock.js',
   },
 };

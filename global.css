@@ -1,0 +1,171 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+@import "nativewind/theme";
+
+/*
+ * Pre-Flight design tokens.
+ *
+ * The look is industrial, after the Pre-Flight design system: square corners
+ * everywhere (--radius: 0), hairline borders instead of shadows, a
+ * lime-chartreuse primary, and uppercase letter-spaced meta labels.
+ *
+ * Verdict colors are semantic tokens rather than per-screen hex values, so the
+ * red/yellow/green go/no-go scale stays consistent everywhere it is rendered.
+ *
+ * Dark mode is a deliberate in-app toggle (ADR-0009: night vision on pre-dawn
+ * checks), not a follow-the-OS preference. On native the dark palette is
+ * expressed as a prefers-color-scheme block because that is what NativeWind
+ * compiles; the app drives it explicitly through Appearance.setColorScheme
+ * (see applyThemeMode) instead of letting the OS decide.
+ */
+@layer theme {
+  :root {
+    --background: 250 250 249;
+    --foreground: 12 12 11;
+    --card: 255 255 255;
+    --card-foreground: 12 12 11;
+    --popover: 255 255 255;
+    --popover-foreground: 12 12 11;
+    --primary: 132 204 22;
+    --primary-foreground: 20 26 8;
+    --secondary: 244 244 242;
+    --secondary-foreground: 12 12 11;
+    --muted: 244 244 242;
+    --muted-foreground: 115 115 110;
+    --accent: 240 240 237;
+    --accent-foreground: 12 12 11;
+    --destructive: 220 38 38;
+    --destructive-foreground: 255 255 255;
+    --border: 224 224 220;
+    --input: 224 224 220;
+    --ring: 132 204 22;
+    --caution: 217 160 0;
+    --caution-foreground: 40 28 0;
+    --go: 132 204 22;
+    --go-foreground: 20 26 8;
+    --nogo: 220 38 38;
+    --nogo-foreground: 255 255 255;
+  }
+
+  /*
+   * Native resolves this against Appearance, which the in-app toggle sets
+   * explicitly (applyThemeMode) rather than letting the OS decide — the
+   * night-vision requirement in ADR-0009. `.dark` is kept for web parity.
+   */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 10 10 9;
+      --foreground: 245 245 244;
+      --card: 23 23 21;
+      --card-foreground: 245 245 244;
+      --popover: 23 23 21;
+      --popover-foreground: 245 245 244;
+      --primary: 163 230 53;
+      --primary-foreground: 20 26 8;
+      --secondary: 38 38 35;
+      --secondary-foreground: 245 245 244;
+      --muted: 33 33 31;
+      --muted-foreground: 163 163 158;
+      --accent: 38 38 35;
+      --accent-foreground: 245 245 244;
+      --destructive: 239 68 68;
+      --destructive-foreground: 255 255 255;
+      --border: 51 51 48;
+      --input: 51 51 48;
+      --ring: 163 230 53;
+      --caution: 234 179 8;
+      --caution-foreground: 40 28 0;
+      --go: 163 230 53;
+      --go-foreground: 20 26 8;
+      --nogo: 239 68 68;
+      --nogo-foreground: 255 255 255;
+    }
+  }
+
+  :root.dark {
+    --background: 10 10 9;
+    --foreground: 245 245 244;
+    --card: 23 23 21;
+    --card-foreground: 245 245 244;
+    --popover: 23 23 21;
+    --popover-foreground: 245 245 244;
+    --primary: 163 230 53;
+    --primary-foreground: 20 26 8;
+    --secondary: 38 38 35;
+    --secondary-foreground: 245 245 244;
+    --muted: 33 33 31;
+    --muted-foreground: 163 163 158;
+    --accent: 38 38 35;
+    --accent-foreground: 245 245 244;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 51 51 48;
+    --input: 51 51 48;
+    --ring: 163 230 53;
+    --caution: 234 179 8;
+    --caution-foreground: 40 28 0;
+    --go: 163 230 53;
+    --go-foreground: 20 26 8;
+    --nogo: 239 68 68;
+    --nogo-foreground: 255 255 255;
+  }
+
+  :root.light {
+    --background: 250 250 249;
+    --foreground: 12 12 11;
+    --card: 255 255 255;
+    --card-foreground: 12 12 11;
+    --popover: 255 255 255;
+    --popover-foreground: 12 12 11;
+    --primary: 132 204 22;
+    --primary-foreground: 20 26 8;
+    --secondary: 244 244 242;
+    --secondary-foreground: 12 12 11;
+    --muted: 244 244 242;
+    --muted-foreground: 115 115 110;
+    --accent: 240 240 237;
+    --accent-foreground: 12 12 11;
+    --destructive: 220 38 38;
+    --destructive-foreground: 255 255 255;
+    --border: 224 224 220;
+    --input: 224 224 220;
+    --ring: 132 204 22;
+    --caution: 217 160 0;
+    --caution-foreground: 40 28 0;
+    --go: 132 204 22;
+    --go-foreground: 20 26 8;
+    --nogo: 220 38 38;
+    --nogo-foreground: 255 255 255;
+  }
+}
+
+@theme inline {
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+  --color-card: rgb(var(--card));
+  --color-card-foreground: rgb(var(--card-foreground));
+  --color-popover: rgb(var(--popover));
+  --color-popover-foreground: rgb(var(--popover-foreground));
+  --color-primary: rgb(var(--primary));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+  --color-secondary: rgb(var(--secondary));
+  --color-secondary-foreground: rgb(var(--secondary-foreground));
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-accent: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+  --color-destructive: rgb(var(--destructive));
+  --color-destructive-foreground: rgb(var(--destructive-foreground));
+  --color-border: rgb(var(--border));
+  --color-input: rgb(var(--input));
+  --color-ring: rgb(var(--ring));
+  --color-caution: rgb(var(--caution));
+  --color-caution-foreground: rgb(var(--caution-foreground));
+  --color-go: rgb(var(--go));
+  --color-go-foreground: rgb(var(--go-foreground));
+  --color-nogo: rgb(var(--nogo));
+  --color-nogo-foreground: rgb(var(--nogo-foreground));
+
+  --radius: 0px;
+}

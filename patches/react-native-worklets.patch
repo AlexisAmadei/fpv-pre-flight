@@ -1,0 +1,13 @@
+diff --git a/compatibility.json b/compatibility.json
+index 199e53fe9af1a99fd04466b3c2c7eb7376207a28..4b056de31e6d429b5630b7d0fbfa6868ebb1cc38 100644
+--- a/compatibility.json
++++ b/compatibility.json
+@@ -3,7 +3,7 @@
+     "react-native": ["0.83", "0.84", "0.85", "0.86"]
+   },
+   "0.11.x": {
+-    "react-native": ["0.83", "0.84", "0.85", "0.86"]
++    "react-native": ["0.83", "0.84", "0.85", "0.86", "0.87"]
+   },
+   "0.10.x": {
+     "react-native": ["0.83", "0.84", "0.85", "0.86"]
