@@ -1,4 +1,4 @@
-package com.preflight
+package com.kiwidev.preflight
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

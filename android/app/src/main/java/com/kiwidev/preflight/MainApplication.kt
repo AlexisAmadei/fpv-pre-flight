@@ -1,4 +1,4 @@
-package com.preflight
+package com.kiwidev.preflight
 
 import android.app.Application
 import com.facebook.react.PackageList
