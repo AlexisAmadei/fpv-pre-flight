@@ -12,9 +12,17 @@ _Avoid_: Location, Site, Field
 A saved drone the pilot flies, holding its WeightClass and its own Checklist additions and Verdict thresholds.
 _Avoid_: Drone, Aircraft, Build, Quad
 
+**DroneKind**:
+Which family a DroneProfile belongs to — FPV or camera — selecting which WeightClass ladder applies and which checks are meaningful at all. Orthogonal to WeightClass: kind is a difference in nature, WeightClass a difference in degree.
+_Avoid_: Type, DroneType, Category
+
 **WeightClass**:
-A size/weight category (tiny whoop, 3", 5", 7"+ freestyle, long-range) assigned to a DroneProfile that auto-populates its default Verdict thresholds.
+A size/weight category assigned to a DroneProfile that auto-populates its default Thresholds. The available classes depend on the DroneKind: FPV uses the propeller-size ladder (tiny whoop, 3", 5", 7"+ freestyle, long-range), camera uses regulatory weight brackets (sub-250g, 250g–900g, 900g+) because the 250g line is what changes a camera pilot's legal obligations.
 _Avoid_: Size, Category
+
+**DroneModel**:
+A known camera airframe (Mini 4 Pro, Air 3S, Mavic 3 Pro…) carrying published specifications, selected when creating a camera DroneProfile to seed Thresholds more precisely than a WeightClass can. Always escapable: a camera drone with no matching model falls back to its WeightClass.
+_Avoid_: Airframe, Aircraft, Model
 
 **Verdict**:
 The red/yellow/green go/no-go assessment for a FlyingSpot at a specific point in time (never a range or worst-case across a window), computed against a DroneProfile's thresholds. Wind, gusts, and rain probability are hard limits — any one alone past its threshold forces red regardless of the others; short of that, those three plus a light UV index contribution combine into a weighted score deciding yellow vs. green. UV index alone never forces red (heat/battery overheat risk, not a hard stop). Cloud cover is informational only and never affects the level.
@@ -24,12 +32,20 @@ _Avoid_: Score, Rating, Status
 Weather data held past its freshness window and still shown — visibly flagged as outdated — rather than hidden or silently treated as current.
 _Avoid_: Outdated, Expired, Cached
 
+**EstimatedCloudBase**:
+The height of the cloud base above ground, derived from the temperature/dew-point spread rather than measured. Named for its derivation because the estimate is least reliable for stratus, fog, and marine layers — exactly the conditions where a low base matters most. Informational only: shown alongside low-cloud cover as a corroborating signal, never a Threshold, and never affects the Verdict level.
+_Avoid_: Ceiling, CloudBase, CloudHeight
+
+**NearestAirfield**:
+The distance to the closest known airfield from a FlyingSpot, with that airfield's name. An advisory proximity signal that escalates visually as distance shrinks — never an airspace clearance, since the underlying data is airfield point locations rather than controlled-airspace boundaries. Derived from the FlyingSpot's coordinates whenever it is shown rather than stored on the spot, so a corrected dataset takes effect everywhere at once. Independent of which DroneProfile is flying: a legal boundary is a property of the place, not the aircraft.
+_Avoid_: AirspaceStatus, NoFlyZone, RestrictedZone, Airspace
+
 **Threshold**:
 A per-metric limit on a DroneProfile that determines where that metric falls on the Verdict's red/yellow/green scale. Defaults from the DroneProfile's WeightClass, manually overridable per metric.
 _Avoid_: Limit, Setting
 
 **GenericChecklist**:
-The base set of preflight checklist items that apply regardless of which DroneProfile is flying.
+The base set of preflight checklist items a pilot never has to type: a universal core applying to every drone, plus a per-DroneKind set applying to every drone of that kind. Kind-scoped rather than universal because the items that matter most are kind-specific — Return-to-Home altitude for camera drones, video channel for FPV — and a safety item every pilot must rediscover for themselves is one most will miss.
 _Avoid_: Default Checklist, Base Checklist
 
 **Checklist**:
@@ -186,7 +202,7 @@ _Blocks_: Save a FlyingSpot, Create a DroneProfile, Manually override a Threshol
 _Blocked by_: nothing.
 
 **Work through the GenericChecklist**:
-The base set of preflight items that apply regardless of which drone is flying.
+The universal preflight core plus the set for the flying DroneProfile's DroneKind.
 _Blocks_: Work through a DroneProfile's Checklist.
 _Blocked by_: nothing.
 

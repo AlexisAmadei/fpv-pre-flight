@@ -193,3 +193,23 @@ export function EmptyState({
     </View>
   );
 }
+
+/**
+ * Explanatory prose under a section — the maquette leans on these to say what
+ * a number does *not* mean, which is load-bearing for an advisory app.
+ */
+export function Caption({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <Text
+      className={`text-[11px] leading-4 text-muted-foreground ${className}`}
+    >
+      {children}
+    </Text>
+  );
+}

@@ -16,6 +16,14 @@ export interface HourlyWeatherPoint {
   precipitationProbability: number; // %
   cloudCover: number; // %
   uvIndex: number;
+  /**
+   * Temperature and dew point in °C, and low-cloud cover in %, backing the
+   * EstimatedCloudBase. Optional because a forecast cached before these were
+   * fetched still deserializes — the cloud base is simply withheld for it.
+   */
+  temperature?: number;
+  dewPoint?: number;
+  lowCloudCover?: number;
 }
 
 export interface DailyWeatherPoint {

@@ -14,6 +14,9 @@ interface OpenMeteoResponse {
     precipitation_probability: number[];
     cloud_cover: number[];
     uv_index: number[];
+    temperature_2m: number[];
+    dew_point_2m: number[];
+    cloud_cover_low: number[];
   };
   daily: {
     time: string[];
@@ -31,7 +34,8 @@ export async function fetchForecast(coordinates: Coordinates): Promise<WeatherFo
   const params = new URLSearchParams({
     latitude: String(coordinates.latitude),
     longitude: String(coordinates.longitude),
-    hourly: 'wind_speed_10m,wind_gusts_10m,precipitation_probability,cloud_cover,uv_index',
+    hourly:
+      'wind_speed_10m,wind_gusts_10m,precipitation_probability,cloud_cover,uv_index,temperature_2m,dew_point_2m,cloud_cover_low',
     daily:
       'wind_speed_10m_max,wind_gusts_10m_max,precipitation_probability_max,uv_index_max,cloud_cover_mean,sunrise,sunset',
     forecast_days: String(FORECAST_DAYS),
@@ -51,6 +55,9 @@ export async function fetchForecast(coordinates: Coordinates): Promise<WeatherFo
     precipitationProbability: data.hourly.precipitation_probability[i],
     cloudCover: data.hourly.cloud_cover[i],
     uvIndex: data.hourly.uv_index[i],
+    temperature: data.hourly.temperature_2m?.[i],
+    dewPoint: data.hourly.dew_point_2m?.[i],
+    lowCloudCover: data.hourly.cloud_cover_low?.[i],
   }));
 
   const daily: DailyWeatherPoint[] = data.daily.time.map((date, i) => ({
