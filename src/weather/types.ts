@@ -46,12 +46,18 @@ export interface WeatherForecast {
   daily: DailyWeatherPoint[];
 }
 
+/** FPV or camera — selects which WeightClass ladder applies. */
+export type DroneKind = 'fpv' | 'camera';
+
 export type WeightClass =
   | 'tiny-whoop'
   | '3-inch'
   | '5-inch'
   | '7-inch-plus'
-  | 'long-range';
+  | 'long-range'
+  | 'sub-250g'
+  | '250g-900g'
+  | '900g-plus';
 
 export interface VerdictThresholds {
   windSpeedMax: number; // km/h
@@ -63,9 +69,12 @@ export interface VerdictThresholds {
 export interface DroneProfile {
   id: string;
   name: string;
+  kind: DroneKind;
   weightClass: WeightClass;
   /** Defaults to the weight class's thresholds; individually overridable. */
   thresholds: VerdictThresholds;
+  /** Set when this camera profile was seeded from a known DJI DroneModel. */
+  droneModelId?: string;
 }
 
 export type VerdictLevel = 'green' | 'yellow' | 'red';

@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
+import { Text } from 'react-native';
 import { DroneFleetScreen } from '../DroneFleetScreen';
 import {
   addDroneProfile,
@@ -18,12 +19,14 @@ const thresholds = {
 const first: DroneProfile = {
   id: 'p1',
   name: 'Freestyle',
+  kind: 'fpv',
   weightClass: '5-inch',
   thresholds,
 };
 const second: DroneProfile = {
   id: 'p2',
   name: 'Long Ranger',
+  kind: 'fpv',
   weightClass: 'long-range',
   thresholds,
 };
@@ -108,5 +111,27 @@ describe('DroneFleetScreen', () => {
     });
 
     expect(onEditDrone).toHaveBeenCalledWith(first);
+  });
+
+  it('shows the DJI model display name for a model-seeded profile instead of the weight-class label', async () => {
+    const modelSeeded: DroneProfile = {
+      id: 'p3',
+      name: 'My Mini',
+      kind: 'camera',
+      weightClass: 'sub-250g',
+      droneModelId: 'dji-mini-4-pro',
+      thresholds,
+    };
+    await addDroneProfile(modelSeeded);
+    const renderer = await render();
+
+    const combinedText = renderer.root
+      .findByProps({ testID: 'edit-drone-p3' })
+      .findAllByType(Text)
+      .map(node => node.props.children)
+      .flat()
+      .join(' ');
+    expect(combinedText).toContain('DJI Mini 4 Pro');
+    expect(combinedText).not.toContain('Sub-250g');
   });
 });

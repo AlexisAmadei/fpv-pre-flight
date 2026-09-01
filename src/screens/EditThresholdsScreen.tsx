@@ -16,7 +16,7 @@ import {
   updateDroneProfile,
 } from '../droneProfiles/droneProfileRepository';
 import { evictChecklist } from '../checklists/checklistRepository';
-import { DEFAULT_THRESHOLDS_BY_WEIGHT_CLASS } from '../weather/weightClasses';
+import { findDroneModel, seededThresholdsFor } from '../weather/droneModels';
 import type { DroneProfile, VerdictThresholds } from '../weather/types';
 import { Button, Card, MetaLabel, Mono } from '../ui/components';
 import { WEIGHT_CLASS_LABELS } from '../ui/theme';
@@ -103,9 +103,9 @@ export function EditThresholdsScreen({
   const saved = profile;
 
   function resetMetric(key: keyof VerdictThresholds) {
-    const defaults = DEFAULT_THRESHOLDS_BY_WEIGHT_CLASS[saved.weightClass];
+    const seeded = seededThresholdsFor(saved);
     setText(current =>
-      current ? { ...current, [key]: String(defaults[key]) } : current,
+      current ? { ...current, [key]: String(seeded[key]) } : current,
     );
   }
 
@@ -141,8 +141,11 @@ export function EditThresholdsScreen({
     setActiveId(saved.id);
   }
 
-  const defaults = DEFAULT_THRESHOLDS_BY_WEIGHT_CLASS[profile.weightClass];
+  const defaults = seededThresholdsFor(profile);
   const isActive = profile.id === activeId;
+  const droneModel = profile.droneModelId
+    ? findDroneModel(profile.droneModelId)
+    : undefined;
 
   return (
     <ScrollView
@@ -156,7 +159,7 @@ export function EditThresholdsScreen({
             {profile.name}
           </Text>
           <Mono className="mt-0.5 text-muted-foreground">
-            {WEIGHT_CLASS_LABELS[profile.weightClass]}
+            {droneModel ? droneModel.displayName : WEIGHT_CLASS_LABELS[profile.weightClass]}
           </Mono>
         </View>
         {isActive ? (

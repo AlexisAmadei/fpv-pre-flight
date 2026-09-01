@@ -24,6 +24,7 @@ const thresholds = {
 const profile: DroneProfile = {
   id: 'p1',
   name: 'My Freestyle Quad',
+  kind: 'fpv',
   weightClass: '5-inch',
   thresholds,
 };
@@ -31,6 +32,7 @@ const profile: DroneProfile = {
 const second: DroneProfile = {
   id: 'p2',
   name: 'Long Ranger',
+  kind: 'fpv',
   weightClass: 'long-range',
   thresholds,
 };
@@ -91,5 +93,14 @@ describe('droneProfileRepository', () => {
     await AsyncStorage.setItem('droneProfile', JSON.stringify(profile));
     expect(await listDroneProfiles()).toEqual([profile]);
     expect(await getActiveDroneProfile()).toEqual(profile);
+  });
+
+  it('migrates a saved profile with no kind field to fpv', async () => {
+    const { kind, ...preKind } = profile;
+    await AsyncStorage.setItem('droneProfiles', JSON.stringify([preKind]));
+    await AsyncStorage.setItem('activeDroneProfileId', JSON.stringify(profile.id));
+
+    expect(await listDroneProfiles()).toEqual([{ ...preKind, kind: 'fpv' }]);
+    expect(await getActiveDroneProfile()).toEqual({ ...preKind, kind: 'fpv' });
   });
 });

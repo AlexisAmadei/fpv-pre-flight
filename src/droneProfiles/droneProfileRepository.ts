@@ -14,6 +14,14 @@ interface Fleet {
 }
 
 /**
+ * Profiles saved before DroneKind existed carry no `kind` field; read them as
+ * `fpv` (the only kind that existed then) rather than prompting to migrate.
+ */
+function withKindMigration(profile: DroneProfile): DroneProfile {
+  return profile.kind ? profile : { ...profile, kind: 'fpv' };
+}
+
+/**
  * Reads the saved fleet, migrating a pre-fleet single DroneProfile forward on
  * first read. The legacy key is left in place rather than deleted: reading is
  * expected to be side-effect free, and a stale key costs nothing.
@@ -24,13 +32,13 @@ async function readFleet(): Promise<Fleet> {
   if (profiles === null) {
     const legacy = await readJson<DroneProfile>(LEGACY_PROFILE_KEY);
     return legacy
-      ? { profiles: [legacy], activeId: legacy.id }
+      ? { profiles: [withKindMigration(legacy)], activeId: legacy.id }
       : { profiles: [], activeId: null };
   }
 
   const activeId = await readJson<string>(ACTIVE_KEY);
   return {
-    profiles,
+    profiles: profiles.map(withKindMigration),
     // A saved activeId can dangle if that profile was deleted by an older
     // build; fall back to the first profile so the fleet always has a pilot.
     activeId:

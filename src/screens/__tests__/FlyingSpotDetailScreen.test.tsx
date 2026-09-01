@@ -29,6 +29,7 @@ const spot: FlyingSpot = {
 const profile: DroneProfile = {
   id: 'p1',
   name: 'Test Quad',
+  kind: 'fpv',
   weightClass: '5-inch',
   thresholds: {
     windSpeedMax: 28,

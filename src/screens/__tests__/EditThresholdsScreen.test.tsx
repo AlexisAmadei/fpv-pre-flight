@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactTestRenderer, { act } from 'react-test-renderer';
+import { Text } from 'react-native';
 import { EditThresholdsScreen } from '../EditThresholdsScreen';
 import {
   getActiveDroneProfile,
@@ -26,6 +27,7 @@ const mockSaveDroneProfile = updateDroneProfile as jest.MockedFunction<
 const profile: DroneProfile = {
   id: 'p1',
   name: 'Test Quad',
+  kind: 'fpv',
   weightClass: '5-inch',
   thresholds: {
     windSpeedMax: 28,
@@ -126,5 +128,107 @@ describe('EditThresholdsScreen', () => {
     expect(
       renderer!.root.findByProps({ testID: 'no-profile-message' }),
     ).toBeTruthy();
+  });
+
+  const modelSeededProfile: DroneProfile = {
+    id: 'p2',
+    name: 'My Mini',
+    kind: 'camera',
+    weightClass: 'sub-250g',
+    droneModelId: 'dji-mini-4-pro',
+    thresholds: {
+      // Deliberately overridden from the model's seed, to prove Reset
+      // restores the model rating / implied bracket rather than these.
+      windSpeedMax: 20,
+      windGustsMax: 25,
+      precipitationProbabilityMax: 15,
+      uvIndexMax: 5,
+    },
+  };
+
+  it("shows the DJI model's display name in the header for a model-seeded profile", async () => {
+    mockGetDroneProfile.mockResolvedValue(modelSeededProfile);
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = ReactTestRenderer.create(
+        <EditThresholdsScreen onDone={jest.fn()} />,
+      );
+    });
+    await flush();
+
+    const headerText = renderer!.root
+      .findAllByType(Text)
+      .map(node => node.props.children)
+      .flat()
+      .join(' ');
+    expect(headerText).toContain('DJI Mini 4 Pro');
+  });
+
+  it('resets wind/gust to the model rating and rain/UV to the implied bracket default for a model-seeded profile', async () => {
+    mockGetDroneProfile.mockResolvedValue(modelSeededProfile);
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = ReactTestRenderer.create(
+        <EditThresholdsScreen onDone={jest.fn()} />,
+      );
+    });
+    await flush();
+
+    const find = (testID: string) => renderer.root.findByProps({ testID });
+
+    act(() => {
+      find('threshold-reset-windSpeedMax').props.onPress();
+      find('threshold-reset-windGustsMax').props.onPress();
+      find('threshold-reset-precipitationProbabilityMax').props.onPress();
+      find('threshold-reset-uvIndexMax').props.onPress();
+    });
+    await act(async () => {
+      await find('save-thresholds').props.onPress();
+    });
+
+    // Mini 4 Pro's own rating (38.5 km/h) for wind/gust; sub-250g bracket
+    // default (25%, UV 9) for rain/UV, per ADR 0013.
+    expect(mockSaveDroneProfile).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        thresholds: {
+          windSpeedMax: 38.5,
+          windGustsMax: 38.5,
+          precipitationProbabilityMax: 25,
+          uvIndexMax: 9,
+        },
+      }),
+    );
+  });
+
+  it('leaves reset behavior unchanged for a profile without droneModelId', async () => {
+    mockGetDroneProfile.mockResolvedValue(profile);
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = ReactTestRenderer.create(
+        <EditThresholdsScreen onDone={jest.fn()} />,
+      );
+    });
+    await flush();
+
+    const find = (testID: string) => renderer.root.findByProps({ testID });
+
+    act(() => {
+      find('threshold-input-windSpeedMax').props.onChangeText('99');
+    });
+    act(() => {
+      find('threshold-reset-windSpeedMax').props.onPress();
+    });
+    await act(async () => {
+      await find('save-thresholds').props.onPress();
+    });
+
+    expect(mockSaveDroneProfile).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        thresholds: expect.objectContaining({ windSpeedMax: 28 }),
+      }),
+    );
   });
 });

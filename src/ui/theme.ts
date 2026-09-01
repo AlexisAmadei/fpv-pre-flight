@@ -45,4 +45,7 @@ export const WEIGHT_CLASS_LABELS = {
   '5-inch': '5" Freestyle',
   '7-inch-plus': '7"+ Freestyle',
   'long-range': 'Long-Range',
+  'sub-250g': 'Sub-250g',
+  '250g-900g': '250g–900g',
+  '900g-plus': '900g+',
 } as const;

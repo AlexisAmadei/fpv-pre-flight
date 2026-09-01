@@ -6,6 +6,7 @@ import {
   setActiveDroneProfile,
 } from '../droneProfiles/droneProfileRepository';
 import type { DroneProfile } from '../weather/types';
+import { findDroneModel } from '../weather/droneModels';
 import { formatWindSpeed } from '../weather/units';
 import { getDeviceRegion } from '../region';
 import { Button, Card, MetaLabel, Mono } from '../ui/components';
@@ -57,6 +58,9 @@ export function DroneFleetScreen({ onAddDrone, onEditDrone }: Props) {
         }
         renderItem={({ item }) => {
           const isActive = item.id === activeId;
+          const droneModel = item.droneModelId
+            ? findDroneModel(item.droneModelId)
+            : undefined;
           return (
             <Card
               className={`flex-row items-center gap-3 p-3.5 ${
@@ -82,8 +86,8 @@ export function DroneFleetScreen({ onAddDrone, onEditDrone }: Props) {
                   )}
                 </View>
                 <Mono className="mt-0.5 text-muted-foreground">
-                  {WEIGHT_CLASS_LABELS[item.weightClass]} ·{' '}
-                  {formatWindSpeed(item.thresholds.windSpeedMax, region)} wind
+                  {droneModel ? droneModel.displayName : WEIGHT_CLASS_LABELS[item.weightClass]}{' '}
+                  · {formatWindSpeed(item.thresholds.windSpeedMax, region)} wind
                 </Mono>
               </Pressable>
 

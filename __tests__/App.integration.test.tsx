@@ -96,6 +96,9 @@ describe('Pre-Flight end-to-end flow', () => {
       find('drone-name-input').props.onChangeText('Test Quad');
     });
     act(() => {
+      find('kind-fpv').props.onPress();
+    });
+    act(() => {
       find('weight-class-5-inch').props.onPress();
     });
     await act(async () => {
