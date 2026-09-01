@@ -21,7 +21,7 @@ A size/weight category assigned to a DroneProfile that auto-populates its defaul
 _Avoid_: Size, Category
 
 **DroneModel**:
-A known camera airframe (Mini 4 Pro, Air 3S, Mavic 3 Pro…) carrying published specifications, selected when creating a camera DroneProfile to seed Thresholds more precisely than a WeightClass can. Always escapable: a camera drone with no matching model falls back to its WeightClass.
+A known DJI camera airframe (Neo, Mini 4 Pro, Mini 5 Pro, Air 3S, Mavic 3 Pro, Mavic 4 Pro) carrying published wind-resistance and weight specifications, selected when creating a camera DroneProfile in place of picking a WeightClass bracket by hand. Seeds wind speed and gust Thresholds from the model's own published rating; rain probability and UV index Thresholds still come from whichever camera WeightClass bracket the model's weight falls into, since DJI doesn't publish those. Always escapable: the picker carries an explicit "choose weight class manually" option, and a camera drone with no matching model falls back to its WeightClass bracket.
 _Avoid_: Airframe, Aircraft, Model
 
 **Verdict**:
@@ -94,7 +94,17 @@ _Blocked by_: List saved FlyingSpots.
 **Create a DroneProfile**:
 Names a drone and picks its WeightClass; the chosen class's default Thresholds are previewed before saving. A pilot keeps a fleet of DroneProfiles, one of which is the one currently being flown.
 _Blocks_: Seed Thresholds from a WeightClass, Manually override a Threshold, Reset a Threshold to its WeightClass default, Compute a Verdict and everything downstream of it.
+_Blocked by_: Choose a DroneProfile's DroneKind.
+
+**Choose a DroneProfile's DroneKind**:
+An explicit first step in creating a DroneProfile: FPV or camera. The choice determines which WeightClass ladder is offered (FPV's propeller-size ladder or camera's regulatory weight brackets) and whether a DroneModel picker is offered at all. Existing DroneProfiles saved before this step existed are silently read as `fpv`, with no migration prompt.
+_Blocks_: Create a DroneProfile, Pick a DroneModel for a camera DroneProfile.
 _Blocked by_: nothing.
+
+**Pick a DroneModel for a camera DroneProfile**:
+A camera DroneProfile can be seeded from a known DJI airframe instead of a hand-picked WeightClass bracket: a picker grouped by product line (Neo, Mini, Air, Mavic), with an explicit "choose weight class manually" option alongside it. Selecting a model bypasses the WeightClass step entirely, seeding wind speed and gust Thresholds from that model's own published rating while rain probability and UV index still come from the model's implied WeightClass bracket. Per-metric Reset in threshold editing restores each field to however it was originally seeded — the model's own rating for wind/gust, the bracket default for rain/UV.
+_Blocks_: nothing.
+_Blocked by_: Choose a DroneProfile's DroneKind, Seed Thresholds from a WeightClass.
 
 **Keep a fleet of DroneProfiles**:
 Lists every saved drone, shows which one is being flown, and switches between them; the Verdict everywhere is computed against the flying drone's Thresholds. Deleting a drone hands flying status to another, and removes that drone's Checklist.
@@ -102,9 +112,9 @@ _Blocks_: Work through a DroneProfile's Checklist.
 _Blocked by_: Create a DroneProfile.
 
 **Seed Thresholds from a WeightClass**:
-Each WeightClass (tiny whoop, 3", 5", 7"+ freestyle, long-range) carries default wind, gust, rain-probability, and UV-index limits that populate a new DroneProfile.
-_Blocks_: Compute a Verdict, Reset a Threshold to its WeightClass default.
-_Blocked by_: Create a DroneProfile.
+Each WeightClass carries default wind, gust, rain-probability, and UV-index limits that populate a new DroneProfile. The ladder depends on DroneKind: FPV uses propeller size (tiny whoop, 3", 5", 7"+ freestyle, long-range), camera uses regulatory weight brackets (sub-250g, 250g–900g, 900g+).
+_Blocks_: Compute a Verdict, Reset a Threshold to its WeightClass default, Pick a DroneModel for a camera DroneProfile.
+_Blocked by_: Choose a DroneProfile's DroneKind.
 
 **Manually override a Threshold**:
 Per-metric numeric editing of the DroneProfile's four Thresholds, saved back to the profile.
